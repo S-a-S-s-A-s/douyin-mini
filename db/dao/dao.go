@@ -2,6 +2,7 @@ package dao
 
 import (
 	"douyin-mini/db"
+
 	"gorm.io/gorm"
 
 	"time"
@@ -158,4 +159,65 @@ func FindAllLikeVideo(id, myid int64) []db.Video {
 		}
 	}
 	return results
+}
+
+// GetCommentList 获取指定videoID的评论表
+func GetCommentList(videoID int64) ([]db.Comment, error) {
+	var commentList []db.Comment
+	if err := db.DB.Model(&db.Comment{}).Where("video_id=?", videoID).Find(&commentList).Error; err != nil {
+		return commentList, err
+	}
+	return commentList, nil
+}
+
+// err := db.DB.Model(&db.Like{}).Where("user_id = ?", id).Find(&likes).Error
+
+// PostComment 发布评论
+func PostComment(comment db.Comment) error {
+	if err := db.DB.Create(&comment).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteComment 删除指定commentID的评论
+func DeleteComment(commentID int64) error {
+	if err := db.DB.Model(&db.Comment{}).Where("id = ?", commentID).Delete(&db.Comment{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddCommentCount add comment_count
+func AddCommentCount(videoID int64) error {
+
+	if err := db.DB.Model(&db.Video{}).Where("id = ?", videoID).Update("comment_count", gorm.Expr("comment_count + 1")).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// ReduceCommentCount reduce comment_count
+func ReduceCommentCount(videoID int64) error {
+	if err := db.DB.Model(&db.Video{}).Where("id = ?", videoID).Update("comment_count", gorm.Expr("comment_count - 1")).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// Get user info by ID
+func GetAUserByID(userID int64, user *db.User) error {
+	if err := db.DB.Model(&db.User{}).Where("id = ?", userID).Find(user).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetVideoAuthor get video author
+func GetVideoAuthorID(videoID int64) (int64, error) {
+	var video db.Video
+	if err := db.DB.Model(&db.Video{}).Where("id = ?", videoID).Find(&video).Error; err != nil {
+		return int64(video.ID), err
+	}
+	return video.AuthorId, nil
 }

@@ -30,9 +30,10 @@ type Video struct {
 type Comment struct {
 	ID         int64 `json:"id"`
 	UserId     int64
-	UserName   int64
+	UserName   string
+	VideoId    int64
 	Content    string
-	CreateTime time.Time
+	CreateTime string
 }
 
 type Like struct {

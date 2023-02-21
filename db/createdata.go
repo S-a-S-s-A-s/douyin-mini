@@ -5,7 +5,10 @@ import (
 )
 
 func CreateData() {
-	user := &User{Username: "sbbbbbbb", Password: "123456", FollowCount: 123, FollowerCount: 123456}
+	user := []*User{
+		{Username: "sbbbbbbb", Password: "123456", FollowCount: 123, FollowerCount: 123456},
+		{Username: "whale", Password: "123456", FollowCount: 123, FollowerCount: 123456},
+	}
 	if err := DB.Create(user).Error; err != nil {
 		println(err)
 	}
@@ -16,6 +19,13 @@ func CreateData() {
 		{AuthorId: 1, AuthorName: "海贼王", CreateTime: time.Now(), PlayURL: "https://644-36-1.vod.tv.itc.cn/sohu/v1/TmP3qKIsWJNHDmo3POd2PLC7oMPGuT02fLE6yJy7PJXUyYbSoO27fSx.mp4?k=YPc9JY&p=j9lvzSwUqmkiqSoBoSri0S1AqSPCopkUhRYAtUxIgYeiwm12ZD6Sotxcyp0Gvm1mRDE&r=TUldziJCtpCmhWB3tSCGhWlvsmCUqpxWtWaizY&q=OpCGoEOyzSwWsSCAoKOL4HrIWh6s5G6XfFXsWBAHfBNS0F2OfBAOWh14fBoURDvsWZ&nid=644", CoverURL: "https://photocdn.tv.sohu.com/img/20230208/frag_item_1675842825344_5.jpg", FavoriteCount: 123, CommentCount: 1234, Title: "eeeee"},
 	}
 	if err := DB.Create(videos).Error; err != nil {
+		println(err)
+	}
+
+	comments := []*Comment{
+		{UserId: 1, UserName: "海贼王", VideoId: 1, Content: "test测试", CreateTime: time.Now().Format("2006-01-02 15:04:05")},
+	}
+	if err := DB.Create(comments).Error; err != nil {
 		println(err)
 	}
 }
