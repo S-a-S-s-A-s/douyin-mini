@@ -33,6 +33,7 @@ func Feed(c *gin.Context) {
 			VideoList:  nil,
 			NextTime:   t,
 		})
+		return
 	}
 	c.JSON(http.StatusOK, DouyinFeedResponse{
 		StatusCode: 0,

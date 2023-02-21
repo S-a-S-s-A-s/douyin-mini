@@ -22,10 +22,10 @@ func CreateData() {
 		println(err)
 	}
 
-	comments := []*Comment{
-		{UserId: 1, UserName: "海贼王", VideoId: 1, Content: "test测试", CreateTime: time.Now().Format("2006-01-02 15:04:05")},
-	}
-	if err := DB.Create(comments).Error; err != nil {
-		println(err)
-	}
+	//comments := []*Comment{
+	//	{UserId: 1, UserName: "海贼王", VideoId: 1, Content: "test测试", CreateTime: time.Now().Format("2006-01-02 15:04:05")},
+	//}
+	//if err := DB.Create(comments).Error; err != nil {
+	//	println(err)
+	//}
 }

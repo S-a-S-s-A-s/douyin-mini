@@ -14,7 +14,5 @@ func main() {
 
 	InitRouter(r)
 	db.Init()
-	//创建测试数据
-	db.CreateData()
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run(":8000") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
