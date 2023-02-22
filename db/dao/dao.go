@@ -33,9 +33,15 @@ func GetVideos(lasttime time.Time, token string) []db.Video {
 	return result
 }
 
+// 上传视频
 func CreateVideo(video db.Video) {
 	if err := db.DB.Create(&video).Error; err != nil {
 		println(err)
+	}
+	//用户作品数加一
+	err := db.DB.Model(&db.User{ID: video.AuthorId}).Update("work_count", gorm.Expr("work_count + ?", 1)).Error
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -108,6 +114,21 @@ func LikeVideo(userid, videoid int64) {
 	if err != nil {
 		panic(err)
 	}
+	//喜欢数加一
+	err = db.DB.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count + ?", 1)).Error
+	if err != nil {
+		panic(err)
+	}
+	//被喜欢数加一
+	var video db.Video
+	err = db.DB.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
+	if err != nil {
+		panic(err)
+	}
+	err = db.DB.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited + ?", 1)).Error
+	if err != nil {
+		panic(err)
+	}
 }
 
 // 取消点赞
@@ -120,7 +141,21 @@ func NoLikeVideo(userid, videoid int64) {
 	if err != nil {
 		panic(err)
 	}
-
+	//喜欢数减一
+	err = db.DB.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error
+	if err != nil {
+		panic(err)
+	}
+	//被喜欢数减一
+	var video db.Video
+	err = db.DB.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
+	if err != nil {
+		panic(err)
+	}
+	err = db.DB.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited - ?", 1)).Error
+	if err != nil {
+		panic(err)
+	}
 }
 
 // 列出所有喜欢的视频
