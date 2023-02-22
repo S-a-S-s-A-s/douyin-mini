@@ -26,7 +26,7 @@ type VideoListResponse struct {
 // Publish check token then save upload file to public directory
 func Publish(c *gin.Context) {
 	token := c.PostForm("token")
-	title := c.Query("title")
+	title := c.PostForm("title")
 	if _, exist := db.Token[token]; !exist {
 		c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User doesn't exist"})
 		return
@@ -68,8 +68,8 @@ func Publish(c *gin.Context) {
 		AuthorId:   user.ID,
 		AuthorName: user.Username,
 		CreateTime: time.Now(),
-		PlayURL:    "http://192.168.224.66:80/" + finalName,
-		CoverURL:   "http://192.168.224.66:80/" + finalName + ".png",
+		PlayURL:    "http://192.168.248.66:80/" + finalName,
+		CoverURL:   "http://192.168.248.66:80/" + finalName + ".png",
 		Title:      title,
 	}
 	dao.CreateVideo(video)
@@ -99,6 +99,7 @@ func PublishList(c *gin.Context) {
 
 }
 
+// 得到封面
 func GetSnapshot(videoPath, snapshotPath string, frameNum int) (err error) {
 	snapshotPath = "./public/" + snapshotPath
 	buf := bytes.NewBuffer(nil)

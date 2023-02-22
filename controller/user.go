@@ -3,6 +3,7 @@ package controller
 import (
 	"douyin-mini/db"
 	"douyin-mini/db/dao"
+	"douyin-mini/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -35,7 +36,7 @@ type UserResponse struct {
 func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
-
+	password = util.GetSHA256HashCode([]byte(password))
 	user := dao.FindUserName(username)
 	if user.ID != 0 {
 		c.JSON(http.StatusOK, UserLoginResponse{
@@ -57,7 +58,7 @@ func Register(c *gin.Context) {
 func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
-
+	password = util.GetSHA256HashCode([]byte(password))
 	user := dao.FindUserPassword(username, password)
 	if user.ID == 0 {
 		c.JSON(http.StatusOK, UserLoginResponse{
