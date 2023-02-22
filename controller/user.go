@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
@@ -44,7 +45,7 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
-	token := username + password
+	token := util.GetSHA256HashCode([]byte(username + time.Now().String()))
 	db.Token[token] = dao.CreateUser(username, password)
 
 	c.JSON(http.StatusOK, UserLoginResponse{
@@ -66,7 +67,7 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	token := username + password
+	token := util.GetSHA256HashCode([]byte(username + time.Now().String()))
 	db.Token[token] = user.ID
 	c.JSON(http.StatusOK, UserLoginResponse{
 		Response: Response{StatusCode: 0},
