@@ -68,8 +68,8 @@ func Publish(c *gin.Context) {
 		AuthorId:   user.ID,
 		AuthorName: user.Username,
 		CreateTime: time.Now(),
-		PlayURL:    "http://192.168.248.66:80/" + finalName,
-		CoverURL:   "http://192.168.248.66:80/" + finalName + ".png",
+		PlayURL:    "http://192.168.178.66:80/" + finalName,
+		CoverURL:   "http://192.168.178.66:80/" + finalName + ".png",
 		Title:      title,
 	}
 	dao.CreateVideo(video)

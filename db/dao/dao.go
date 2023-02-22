@@ -2,6 +2,7 @@ package dao
 
 import (
 	"douyin-mini/db"
+	"log"
 
 	"gorm.io/gorm"
 
@@ -11,37 +12,47 @@ import (
 func GetVideos(lasttime time.Time, token string) []db.Video {
 	userid := db.Token[token]
 	var result = make([]db.Video, 0)
-	err := db.DB.Model(&db.Video{}).Where("create_time < ? and author_id != ?", lasttime, userid).Order("create_time DESC").Limit(30).Find(&result).Error
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(&db.Video{}).Where("create_time < ? and author_id != ?", lasttime, userid).Order("create_time DESC").Limit(30).Find(&result).Error
+		if err != nil {
+			return err
+		}
+		for i := 0; i < len(result); i++ {
+			if err = tx.Model(&db.User{}).Where("id = ?", result[i].AuthorId).Find(&result[i].Author).Error; err != nil {
+				return err
+			}
+			//查看是否点赞
+			var like db.Like
+			if err = tx.Model(&db.Like{}).Where("video_id = ? and user_id = ?", result[i].ID, userid).Find(&like).Error; err != nil {
+				return err
+			}
+			if like.ID != 0 {
+				result[i].IsFavorite = true
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	for i := 0; i < len(result); i++ {
-		if err = db.DB.Model(&db.User{}).Where("id = ?", result[i].AuthorId).Find(&result[i].Author).Error; err != nil {
-			panic(err)
-		}
-
-		//查看是否点赞
-		var like db.Like
-		if err = db.DB.Model(&db.Like{}).Where("video_id = ? and user_id = ?", result[i].ID, userid).Find(&like).Error; err != nil {
-			panic(err)
-		}
-		if like.ID != 0 {
-			result[i].IsFavorite = true
-		}
-	}
-
 	return result
 }
 
 // 上传视频
 func CreateVideo(video db.Video) {
-	if err := db.DB.Create(&video).Error; err != nil {
-		println(err)
-	}
-	//用户作品数加一
-	err := db.DB.Model(&db.User{ID: video.AuthorId}).Update("work_count", gorm.Expr("work_count + ?", 1)).Error
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&video).Error; err != nil {
+			return err
+		}
+		//用户作品数加一
+		err := tx.Model(&db.User{ID: video.AuthorId}).Update("work_count", gorm.Expr("work_count + ?", 1)).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -106,55 +117,68 @@ func FindAllVideo(id int64) []db.Video {
 // 点赞
 func LikeVideo(userid, videoid int64) {
 	like := db.Like{UserId: userid, VideoId: videoid}
-	err := db.DB.Create(&like).Error
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Create(&like).Error
+		if err != nil {
+			return err
+		}
+		err = tx.Model(&db.Video{ID: videoid}).Update("favorite_count", gorm.Expr("favorite_count + ?", 1)).Error
+		if err != nil {
+			return err
+		}
+		//喜欢数加一
+		err = tx.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count + ?", 1)).Error
+		if err != nil {
+			return err
+		}
+		//被喜欢数加一
+		var video db.Video
+		err = tx.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
+		if err != nil {
+			return err
+		}
+		err = tx.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited + ?", 1)).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		panic(err)
-	}
-	err = db.DB.Model(&db.Video{ID: videoid}).Update("favorite_count", gorm.Expr("favorite_count + ?", 1)).Error
-	if err != nil {
-		panic(err)
-	}
-	//喜欢数加一
-	err = db.DB.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count + ?", 1)).Error
-	if err != nil {
-		panic(err)
-	}
-	//被喜欢数加一
-	var video db.Video
-	err = db.DB.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
-	if err != nil {
-		panic(err)
-	}
-	err = db.DB.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited + ?", 1)).Error
-	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
 // 取消点赞
 func NoLikeVideo(userid, videoid int64) {
-	err := db.DB.Where("user_id = ? and video_id = ?", userid, videoid).Delete(&db.Like{}).Error
+
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Where("user_id = ? and video_id = ?", userid, videoid).Delete(&db.Like{}).Error
+		if err != nil {
+			panic(err)
+		}
+		err = tx.Model(&db.Video{ID: videoid}).Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error
+		if err != nil {
+			panic(err)
+		}
+		//喜欢数减一
+		err = tx.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error
+		if err != nil {
+			panic(err)
+		}
+		//被喜欢数减一
+		var video db.Video
+		err = tx.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
+		if err != nil {
+			panic(err)
+		}
+		err = tx.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited - ?", 1)).Error
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
 	if err != nil {
-		panic(err)
-	}
-	err = db.DB.Model(&db.Video{ID: videoid}).Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error
-	if err != nil {
-		panic(err)
-	}
-	//喜欢数减一
-	err = db.DB.Model(&db.User{ID: userid}).Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error
-	if err != nil {
-		panic(err)
-	}
-	//被喜欢数减一
-	var video db.Video
-	err = db.DB.Model(&db.Video{}).Where("id = ?", videoid).Find(&video).Error
-	if err != nil {
-		panic(err)
-	}
-	err = db.DB.Model(&db.User{ID: video.AuthorId}).Update("total_favorited", gorm.Expr("total_favorited - ?", 1)).Error
-	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -163,8 +187,6 @@ func FindAllLikeVideo(id, myid int64) []db.Video {
 	var results = make([]db.Video, 0)
 	var likes = make([]db.Like, 0)
 	var ids = make([]int64, 0)
-
-	//找到所有点赞记录
 	err := db.DB.Model(&db.Like{}).Where("user_id = ?", id).Find(&likes).Error
 	if err != nil {
 		panic(err)
@@ -182,7 +204,6 @@ func FindAllLikeVideo(id, myid int64) []db.Video {
 	if err != nil {
 		panic(err)
 	}
-
 	for i := 0; i < len(results); i++ {
 		//查看我是否点赞
 		var like db.Like
