@@ -31,16 +31,20 @@ type Video struct {
 }
 
 type Comment struct {
-	ID         int64 `json:"id"`
-	UserId     int64
-	UserName   string
-	VideoId    int64
-	Content    string
-	CreateTime string
+	ID           int64 `json:"id"`
+	UserId       int64
+	UserName     string
+	VideoId      int64
+	Content      string
+	CreateTime   string
+	Commenter    User  `gorm:"foreignKey:UserId"`
+	CommentVideo Video `gorm:"foreignKey:VideoId"`
 }
 
 type Like struct {
-	ID      int64
-	UserId  int64
-	VideoId int64
+	ID        int64
+	UserId    int64
+	VideoId   int64
+	Likeer    User  `gorm:"foreignKey:UserId"`
+	LikeVideo Video `gorm:"foreignKey:VideoId"`
 }
